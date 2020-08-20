@@ -6,7 +6,7 @@ import styled from 'styled-components';
 function App() {
   return (
     <StyledDiv className="App">
-      <h1> User OnBoarding</h1>
+      <h1> User On-Boarding</h1>
       <Form/>
     </StyledDiv>
   );

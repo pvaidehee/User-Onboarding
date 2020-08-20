@@ -1,204 +1,142 @@
-import React, { useState, useEffect } from "react";
-import * as yup from "yup";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import * as yup from 'yup';
+import axios from 'axios';
+import Users from './Users';
 import styled from 'styled-components';
 
-export default function Form() {
-
-  const [formState, setFormState] = useState({
-    name: "",
-    email: "",
-    password:"",
-    passwordConfirmation:"",
-    terms: true
-  });
-
-
-  const [serverError, setServerError] = useState("");
-
-
-  const [buttonDisabled, setButtonDisabled] = useState(true);
-
-
-
-  const [errors, setErrors] = useState({
-    name: "", 
-    email: "",
-    password:"",
-    passwordConfirmation:"",
-    terms: ""
-  });
-
-
-  const [post, setPost] = useState([]);
-
-
-  const validateChange = (e) => {
-
-
-    yup
-      .reach(formSchema, e.target.name)
-      .validate(e.target.name === "terms" ? e.target.checked : e.target.value) 
-      .then((valid) => {
-
-        setErrors({
-          ...errors,
-          [e.target.name]: ""
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-
-
-        setErrors({
-          ...errors,
-          [e.target.name]: err.errors[0]
-        });
-      });
-  };
-
-  const formSubmit = (e) => {
-    e.preventDefault(); 
-    console.log("form submitted!");
-
-
-    axios
-      .post("https://reqres.in/api/users", formState)
-      .then((res) => {
-        console.log("success!", res.data);
-
-        setPost(res.data);
-
-
-        setServerError(null); 
-
-
-        setFormState({
-          name: "",
-          email: "",
-          password:"",
-          passwordConfirmation:"",
-          terms: true
-        });
-      })
-      .catch((err) => {
-
-        setServerError("oops! something happened!");
-      });
-  };
-
-
-  const inputChange = (e) => {
-
-    e.persist(); 
-    console.log("input changed!", e.target.value);
-    const newFormData = {
-      ...formState,
-      [e.target.name]:
-        e.target.type === "checkbox" ? e.target.checked : e.target.value
-    };
-
-    validateChange(e); 
-    setFormState(newFormData); 
-  };
-
-
-  const formSchema = yup.object().shape({
-    name: yup.string().required("Name is a required field"), 
+//need name, email, password, terms of service checkbox and a submit button
+const formSchema = yup.object().shape({
+    name: yup.string().required("Name is a required field."),
     email: yup
-      .string()
-      .email("Must be a valid email")
-      .required("Must include an email"), 
-
-      password: yup
-      .string()
-      .required('Password is required'),
-
-     passwordConfirmation: yup
-     .string()
-     .oneOf([yup.ref('password'), null], 'Passwords must match'),
-
-    terms: yup.boolean().oneOf([true], "Please agree to T&Cs")
-  });
-
-
-  useEffect(() => {
-    formSchema.isValid(formState).then((isValid) => {
-
-      setButtonDisabled(!isValid); 
+        .string()
+        .email("Must be a valid e-mail address.")
+        .required("Must include an e-mail address."),
+    password: yup
+    .string()
+    .required("Must include a password."),
+    terms: yup.boolean().oneOf([true],"Please agree to the Terms of Service.")
+});
+export default function Form(){
+    const [formState, setFormState] = useState ({
+        name: "",
+        email: "",
+        password: "",
+        terms:false
     });
-  }, [formState]);
-
-  return (
+    const [buttonDisabled, setButtonDisabled] = useState(true);
+    useEffect(()=> {
+        formSchema.isValid(formState).then(valid=>{
+            setButtonDisabled(!valid);
+        });
+    }, [formState]);
+    const [errorState, setErrorState] = useState({
+        name:"",
+        email: "",
+        password: "",
+        terms: ""
+    });
+    const [users, setUsers] = useState([]);
+    const validate = e => {
+        let value = 
+            e.target.type === "checkbox" ? e.target.checked : e.target.value;
+            yup
+            .reach(formSchema, e.target.name)
+            .validate(value)
+            .then(valid => {
+                setErrorState({
+                    ...errorState,
+                    [e.target.name]: ""
+                });
+            })
+            .catch(err => {
+                setErrorState({
+                    ...errorState,
+                    [e.target.name]: err.errors[0]
+                });
+            });
+    };
+    const inputChange = e => {
+        e.persist();
+        validate(e);
+        let value = 
+        e.target.type === "checkbox" ? e.target.checked : e.target.value;
+        setFormState({...formState, [e.target.name]: value});
+    };
+    const formSubmit = e => {
+        e.preventDefault();
+        console.log("Form Submitted!");
+        axios
+        .post("https://reqres.in/api/users", formState)
+        .then(response => {
+            console.log(response);
+            setUsers([...users, response.data]);
+            setFormState({name:"",email:"",password:"",terms:false});
+        })
+        .catch(err => console.log(err))
+    }; 
+return(
+    <div id="container">
     <StyleForm onSubmit={formSubmit}>
-      {serverError ? <p className="error">{serverError}</p> : null}
-
-      <label htmlFor="name">
-        Name:
-        <input
-          id="name"
-          type="text"
-          name="name"
-          value={formState.name}
-          onChange={inputChange}
-        />
-        {errors.name.length > 0 ? <p className="error">{errors.name}</p> : null}
-      </label>
-      <label htmlFor="email">
-        Email:
-        <input
-          id="email"
-          type="text"
-          name="email"
-          value={formState.email}
-          onChange={inputChange}
-        />
-        {errors.email.length > 0 ? (
-          <p className="error">{errors.email}</p>
-        ) : null}
-      </label>
-
-      <label htmlFor="password" className="password">
+        <label htmlFor="name">
+            Name:
+            <input
+                type="text"
+                name="name"
+                id="name"
+                value={formState.name}
+                onChange={inputChange}
+                />
+                {errorState.name.length > 0 ? (
+                    <p className="error">{errorState.name}</p>
+                ):null}
+        </label>
+        <label htmlFor="email">
+          Email:
+            <input
+                type="email"
+                name="email"
+                id="email"
+                value={formState.email}
+                onChange={inputChange}
+                />
+                {errorState.email.length > 0 ? (
+                    <p className="error">{errorState.email}</p>
+                ):null}
+        </label>
+        <label htmlFor="password">
           Password:
-          <input
-          type="string"
-          id="password"
-          name="password"
-          value={formState.password}
-          onChange={inputChange}
-          />
-      </label>
-      <label htmlFor="passwordConfirmation" className="passwordConfirmation">
-          Confirm Password:
-          <input
-          type="string"
-          id="passwordConfirmation"
-          name="passwordConfirmation"
-          value={formState.passwordConfirmation}
-          onChange={inputChange}
-          />
-      </label>
-
-      <label htmlFor="terms" className="terms">
-        <input
-          type="checkbox"
-          id="terms"
-          name="terms"
-          checked={formState.terms}
-          onChange={inputChange}
-        />
-        Terms and Conditions:
-        {errors.terms.length > 0 ? (
-          <p className="error">{errors.terms}</p>
-        ) : null}
-      </label>
-      <button disabled={buttonDisabled} type="submit">
-        Submit
-      </button>
-      <pre>{JSON.stringify(post, null, 2)}</pre>
+            <input 
+                type="password"
+                name="password"
+                id="password"
+                value={formState.password}
+                onChange={inputChange}
+                />
+                {errorState.password.length > 0 ? (
+                    <p className="error">{errorState.password}</p>
+                ):null}
+        </label>
+        <label htmlFor="terms">
+            <input 
+            type="checkbox"
+            id="terms"
+            name="terms"
+            checked={formState.terms}
+            onChange={inputChange}
+            />
+           <span id="fakelink"> Terms of Service</span>
+           {errorState.terms.length > 0 ? (
+               <p className="error">{errorState.terms}</p>
+           ):null}
+        </label>
+        <button id="submit" disabled={buttonDisabled}>Submit</button>
     </StyleForm>
-  );
-}
+
+
+    <Users props={users}/>
+    </div>
+)
+};
 
 
 const StyleForm = styled.form`
